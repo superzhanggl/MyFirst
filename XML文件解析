@@ -1,0 +1,156 @@
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.util.Iterator;
+import java.util.List;
+
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.Element;
+import org.dom4j.io.OutputFormat;
+import org.dom4j.io.SAXReader;
+import org.dom4j.io.XMLWriter;
+
+public class  Dom4j {
+	private Document document;
+	
+	//获取Document对象
+	public void loadDocument(){
+		SAXReader saxReader=new SAXReader();
+		try {
+			document=saxReader.read(new File("PhoneInfo.xml"));
+		} catch (DocumentException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	//显示信息第一种方法，推荐使用第二种，两种的方法，都是根据需求获取对象类型，节点元素、属性元素、文本元素
+	public void infoShowPhone(){
+		//（1）获取根元素，所有关于Document的方法都是导入dom4j包
+		Element root= document.getRootElement();
+		
+		//（2）获取所有<brand>元素集合，返回的是一个迭代器
+		Iterator iterator= root.elementIterator();
+		//遍历集合
+		while(iterator.hasNext()){
+			 Element brand= (Element)iterator.next();
+			 //根据属性名打印属性值
+			 String name=brand.attributeValue("name");
+			 System.out.println(name);
+			 
+			 //获取子元素
+			 Iterator typeIterator=brand.elementIterator();
+			 while(typeIterator.hasNext()){
+				 Element type= (Element)typeIterator.next();
+				//根据属性名打印属性值
+				 String typeName="\t"+type.attributeValue("name");
+				 System.out.println(typeName);
+			 }
+		}
+	}
+
+	//显示元素的第二种方法,直接调用根据需求获取对象类型，节点元素、属性元素、文本元素
+	public void infoUpdate(){
+		//获取根元素，返回的都是元素，所以不用进行元素类型判断
+		Element root=document.getRootElement();
+		//获取元素节点集合
+		List<Element> eles= root.elements("brand");
+		for(int i=0;i<eles.size();i++){
+			Element ele=eles.get(i);
+			String attValue=ele.attributeValue("name");
+			System.out.println(attValue);
+			
+			//继续查找，获取子元素节点
+			List<Element> childEles= ele.elements();
+			for (int j = 0; j < childEles.size(); j++) {
+				Element childEle=childEles.get(j);
+				String childAttvalue=childEle.attributeValue("name");
+				System.out.println("\t"+childAttvalue);
+			}
+		}
+		
+	}
+	
+	//增加一个节点元素,打开XML文件是显示不出增加元素，需要将其保存打印
+	public void addEle() throws IOException{
+		//获取根元素
+		Element root=document.getRootElement();
+		//创建节点元素，增加到元素
+		 Element elbrand= root.addElement("brand");
+		 //设置属性和属性值
+		 elbrand.addAttribute("name", "华为");
+		 
+		 //增加子元素
+		 Element eltype =elbrand.addElement("type");
+		 eltype.addAttribute("name", "HW253");
+		 
+		 //保存,如果文件不存在会重新创建新的文件
+		 saveXml("newPhoneInfo.xml");
+	}
+
+	//保存XML
+	public void saveXml(String path) throws IOException{
+		//相当于获取转换器， 设置保存的编码格式,包也是dom4j
+		OutputFormat format =OutputFormat.createPrettyPrint();//设置格式
+		//format.setEncoding("UTF-8");//如果乱码，还可以继续设置格式
+		
+		
+		OutputStreamWriter osw=new  OutputStreamWriter(new FileOutputStream(path),"UTF-8");
+		
+		XMLWriter writer=new XMLWriter(osw,format);//需要带上format,这样显示出的信息才会有缩进
+		//写一个document进入
+		writer.write(document);
+		osw.close();
+	}
+	
+	//修改节点  先获取根元素，根据根元素，获取节点元素，再增加属性和属性值
+	public void updateEle() throws IOException{
+		//（1）获取根元素，所有关于Document的方法都是导入dom4j包
+			Element root= document.getRootElement();
+			
+			//（2）获取所有<brand>集合，返回的是一个迭代器
+			Iterator iterator= root.elementIterator();
+			//遍历集合
+			int id=0;
+			while(iterator.hasNext()){
+				 Element brand= (Element)iterator.next();
+				 id++;
+				 brand.addAttribute("id", id+"");
+				}
+			//保存,如果文件不存在会重新创建新的文件
+			 saveXml("newPhoneInfo.xml");
+	}
+	
+	//删除节点  先获取根元素，根据根元素，获取节点元素，判断节点元素的某个属性的属性值是否是删除目标
+	public void deleteEle() throws IOException{
+		//（1）获取根元素，所有关于Document的方法都是导入dom4j包
+		Element root= document.getRootElement();
+		//（2）获取所有<brand>集合，返回的是一个迭代器
+		Iterator iterator= root.elementIterator();
+		//遍历集合
+		while(iterator.hasNext()){
+			 Element brand= (Element)iterator.next();
+			 if(brand.attributeValue("name").equals("iphone")){
+				 //System.out.println("122"+brand.attributeValue("name"));
+				 brand.getParent().remove(brand);
+				 
+			 }
+		}
+		//保存,如果文件不存在会重新创建新的文件
+		 saveXml("newPhoneInfo.xml");
+	}
+	
+	public static void main(String[] args) throws IOException {
+		Dom4j dom4j=new Dom4j();
+		dom4j.loadDocument();
+		
+		dom4j.addEle();
+		dom4j.updateEle();
+		dom4j.deleteEle();
+		//dom4j.infoShowPhone();
+		dom4j.infoUpdate();
+		
+	}
+	
+}
